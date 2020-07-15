@@ -3,7 +3,6 @@
 import sys
 import os
 from optparse import OptionParser
-from wsgiref import headers
 import pprint
 import requests
 import getpass
@@ -58,14 +57,14 @@ def main(argv):
             options.u_folder = args[1]
         else:
             parser.print_usage()
-            exit(1)
+            sys.exit(1)
 
     if options.u_filename and options.u_folder is None and len(args) == 1:
         options.u_folder = args[0]
 
     if (options.d_filename and options.u_filename) or (options.d_filename and options.u_folder):
         parser.print_usage()
-        exit(1)
+        sys.exit(1)
 
 
 
@@ -82,7 +81,7 @@ def main(argv):
     token = get_token(idm_url=options.token_url, username=options.username, verbose=options.verbose)
     if token is None:
         print("Can't retrieve token from {}".format(options.token_url))
-        exit(1)
+        sys.exit(1)
     if verbose:
         print("Logged in")
 

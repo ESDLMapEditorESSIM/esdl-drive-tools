@@ -74,3 +74,10 @@ It will automatically filter out *.esdl files, others will be ignored.
 esdl-drive.py * /Users/<your username>/
 ```
 
+## Generate executable for Windows
+To generate an windows executable do the following
+```buildoutcfg
+pip install pyInstaller
+pyinstaller -F esdl-drive.py
+```
+This will generate an .exe in the dist folder, which can be run on 64-bit Windows.
