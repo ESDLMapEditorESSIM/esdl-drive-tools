@@ -19,6 +19,10 @@ If not, try:
 
 These are defined in requirements.txt. Most Python installations have these installed by default.
 
+### Use the Windows executable
+There is also a Windows executable for ESDl Drive. You don't need Python or other requirements to run it.
+
+It is located in the `dist/` folder and can be downloaded directly from GitHub using this link: [esdl-drive.exe](https://raw.github.../../)
 
 
 ## Usage
