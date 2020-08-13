@@ -213,7 +213,6 @@ def get_access_token_from_keycloak(idm_url, username:str, password:str=None, ver
         username = input("Username: ")
     if password is None:
         password = getpass.getpass(prompt="Password: ")
-    #username = "ewoud.werkman@tno.nl"
     #headers = {"Content-Type": "application/x-www-form-urlencoded"}
     data = {"username": username, "password": password, "grant_type": "password", "client_id": "curl", 'scope': 'openid profile email microprofile-jwt user_group_path'}
     response = requests.post(idm_url, data=data)

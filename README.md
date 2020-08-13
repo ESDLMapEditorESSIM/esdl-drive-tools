@@ -78,6 +78,12 @@ It will automatically filter out *.esdl files, others will be ignored.
 esdl-drive.py * /Users/<your username>/
 ```
 
+Upload a file to a different ESDL Drive installation (e.g. the open source version),
+by specifying a different token provider (-t) and a different ESDL Drive URL (-e):
+```
+./esdl-drive.py -v -e http://localhost:9080 -t http://localhost:8080/auth/realms/esdl-mapeditor/protocol/openid-connect/token Test2.esdl /Projects/Test/
+```
+
 ## Generate executable for Windows
 To generate an windows executable do the following
 ```buildoutcfg
