@@ -116,7 +116,7 @@ def upload(file_or_folder:str, destination_folder:str, access_token:str, options
             access_token = token['access_token']
     if os.path.isfile(file_or_folder):
         target_location = destination_folder + '/' + file_or_folder
-        print(f'Uploading {f} to {target_location}')
+        print(f'Uploading {file_or_folder} to {target_location}')
         upload_file(file_or_folder, target_location, access_token, verbose)
     elif os.path.isdir(file_or_folder):
         if destination_folder.endswith('.esdl'):
