@@ -1,5 +1,16 @@
 #!/usr/bin/python3
 
+# This work is based on original code copyrighted by TNO.
+# Licensed to TNO under one or more contributer license agreements.
+#
+# TNO licenses this work to you under the Apache License, Version 2.0
+# You may obtain a copy of the license at http://www.apache.org/licenses/LICENSE-2.0
+#
+# Contributors:
+#       TNO             - Ewoud Werkman: Initial implementation
+#
+# :license: Apache License, Version 2.0
+
 import sys
 import os
 from optparse import OptionParser
