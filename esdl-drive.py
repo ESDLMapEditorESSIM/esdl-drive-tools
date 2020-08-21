@@ -25,6 +25,7 @@ print_token = False
 base_path = '/store/resource'
 token_file = '.esdl_drive_token'
 
+
 def main(argv):
 
     usage = "\n  To upload:   %prog [options] <filename_or_folder> <esdl_drive_folder>\n" \
@@ -67,6 +68,7 @@ def main(argv):
             options.u_filename = args[0]
             options.u_folder = args[1]
         else:
+            print("Error: zero or more than two arguments")
             parser.print_usage()
             sys.exit(1)
 
@@ -74,12 +76,13 @@ def main(argv):
         options.u_folder = args[0]
 
     if (options.d_filename and options.u_filename) or (options.d_filename and options.u_folder):
+        print("Error: do not combine upload and download")
         parser.print_usage()
         sys.exit(1)
 
-
-
     if options.verbose:
+        global verbose
+        verbose = True
         #print(options, args)
         print('File to upload:', options.u_filename)
         print('Folder to upload to:', options.u_folder)
@@ -88,7 +91,10 @@ def main(argv):
         print('Url:', options.url)
         print('Token endpoint:', options.token_url)
         print('Username:', options.username)
+        print('-----------------------------------------------------------------')
 
+    if verbose:
+        print("Retreiving token...")
     token = get_token(idm_url=options.token_url, username=options.username, verbose=options.verbose)
     if token is None:
         print("Can't retrieve token from {}".format(options.token_url))
@@ -99,6 +105,8 @@ def main(argv):
     if options.u_folder and options.u_filename:
         folder = options.url + base_path + options.u_folder
         file = options.u_filename
+        if verbose:
+            print("Uploading file {} to {}".format(file, folder))
         upload(file_or_folder=file, destination_folder=folder, access_token=token['access_token'], options=options)
     if options.d_filename:
         url = options.url + base_path + options.d_filename
@@ -165,6 +173,7 @@ def upload_file(file:str, target_location:str, access_token:str, verbose=False):
                 print('Error uploading {}, reason: {}:{}, headers={}'.format(file, r.reason, r.text, r.headers))
     except Exception as e:
         print("Error: {}".format(e))
+
 
 def download(url:str, access_token: str, verbose=False):
     fileName = url[url.rindex('/')+1:]
@@ -264,12 +273,11 @@ def get_refresh_token_from_keycloak(idm_url, stored_token, verbose: bool = False
         pprint.pprint(token)
     return token
 
-def add_auth_headers(headers: dict, bearer_token: dict):
+
+def add_auth_headers(headers: dict, bearer_token: str):
     auth_header = {'Authorization': 'Bearer ' + bearer_token, 'Content-Type': 'application/xml'}
     headers.update(auth_header)
 
-def help():
-    print('Usage: {} -f <filename>')
 
 if __name__ == '__main__':
     main(sys.argv)
