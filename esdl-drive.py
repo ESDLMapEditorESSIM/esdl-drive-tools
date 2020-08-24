@@ -11,6 +11,15 @@
 #
 # :license: Apache License, Version 2.0
 
+"""
+esdl-drive.py is a command line tool to interact with the ESDL Drive.
+It allows you to upload and download files from the ESDL Drive. As the ESDL Drive
+is secured, it is required that you provide proper credentials. The tool will ask
+for these credentials when required.
+
+More info about ESDL at: https://github.com/energytransition/ESDL
+"""
+
 import sys
 import os
 from optparse import OptionParser
@@ -19,6 +28,9 @@ import requests
 import getpass
 import datetime
 import json
+import glob
+import pathlib
+
 
 verbose = False
 print_token = False
@@ -35,8 +47,11 @@ def main(argv):
     parser = OptionParser(usage=usage, version="%prog 1.0")
     parser.add_option("-u", "--upload-folder", dest="u_folder", action="store",
                       help="Upload folder destination in ESDLDrive, e.g. /Users/edwin/", metavar="FOLDER")
+    parser.add_option("-r", "--recursive", action="store_true", default=False, dest="recursive",
+                      help="Recursively upload a whole folder structure")
     parser.add_option("-f", "--upload-file", dest="u_filename", action="store",
-                      help="File or folder name to upload from local disk, e.g. EnergySystem.esdl or /files/EnergySystems/ or *", metavar="FILE")
+                      help="File or folder name to upload from local disk, e.g. EnergySystem.esdl or /files/EnergySystems/ or *",
+                      metavar="FILE")
     parser.add_option("-d", "--download-file", dest="d_filename", action="store",
                       help="Download file from ESDLDrive, e.g. /Users/edwin/EnergySystem.esdl", metavar="FILE")
     parser.add_option("-e", "--esdldrive-url", action="store", type="string", dest="url",
@@ -68,7 +83,7 @@ def main(argv):
             options.u_filename = args[0]
             options.u_folder = args[1]
         else:
-            print("Error: zero or more than two arguments")
+            print("Error: missing or wrong command line arguments")
             parser.print_usage()
             sys.exit(1)
 
@@ -88,13 +103,14 @@ def main(argv):
         print('Folder to upload to:', options.u_folder)
         print('File to download:', options.d_filename)
         print('Verbose:', options.verbose)
+        print('Recursive:', options.recursive)
         print('Url:', options.url)
         print('Token endpoint:', options.token_url)
         print('Username:', options.username)
         print('-----------------------------------------------------------------')
 
     if verbose:
-        print("Retreiving token...")
+        print("Retrieving token...")
     token = get_token(idm_url=options.token_url, username=options.username, verbose=options.verbose)
     if token is None:
         print("Can't retrieve token from {}".format(options.token_url))
@@ -114,54 +130,45 @@ def main(argv):
         download(url, token['access_token'], options.verbose)
 
 
-def upload(file_or_folder:str, destination_folder:str, access_token:str, options):
-    verbose = options.verbose
-    if file_or_folder == '*':
-        if destination_folder.endswith('.esdl'):
-            print('Not a folder: Can\'t upload multiple files to a single file on the ESDL Drive')
-            return
-        (_, _, filenames) = next(os.walk(os.getcwd()))
-        #print('Going to upload:', filenames)
-        for f in filenames:
-            if f.endswith('.esdl'):
-                target_location = destination_folder + '/' + f
-                #print(f'Uploading {f} to {target_location}')
-                upload_file(f, target_location, access_token, verbose)
-            else:
-                print(f'WARNING: {f} is not an ESDL file, skipping.')
-                return
-            # refresh access token if necessary
-            token = get_token(idm_url=options.token_url, username=options.username, verbose=options.verbose)
-            access_token = token['access_token']
-    if os.path.isfile(file_or_folder):
-        target_location = destination_folder + '/' + file_or_folder
-        print(f'Uploading {file_or_folder} to {target_location}')
-        upload_file(file_or_folder, target_location, access_token, verbose)
-    elif os.path.isdir(file_or_folder):
-        if destination_folder.endswith('.esdl'):
-            print('Not a folder: Can\'t upload multiple files to a single file on the ESDL Drive')
-            return
-        (parent_folder, _, filenames) = next(os.walk(file_or_folder))
-        for f in filenames:
-            if f.endswith('.esdl'):
-                target_location = destination_folder + '/' + f
-                local_file = os.path.join(parent_folder, f)
-                #print(f'Uploading {local_file} to {target_location}')
-                upload_file(local_file, target_location, access_token, verbose)
-            else:
-                print(f'WARNING: {f} is not an ESDL file, skipping.')
-                return
-            # refresh access token if necessary
-            token = get_token(idm_url=options.token_url, username=options.username, verbose=options.verbose)
-            access_token = token['access_token']
+def upload(file_or_folder: str, destination_folder: str, access_token: str, options):
+    recursive = options.recursive
+    if recursive:
+        if '*' in file_or_folder:
+            print("Error: recursive option should not use wildcards such as * or *.esdl, this is done automatically.")
+            exit(2)
+        parent_path = pathlib.Path(file_or_folder).resolve()
+        files = glob.glob(file_or_folder + os.path.sep + "**/*.esdl", recursive=True)
+    else:
+        files = glob.glob(file_or_folder)
+        if len(files) > 1:
+            parent_path = pathlib.Path(files[0]).parent.resolve()
+        else:
+            print(f'Error finding ESDL-file {file_or_folder}')
+            exit(3)
+    local_files = []
+    for f in files:
+        res = pathlib.Path(f).resolve()
+        if res.is_file(): # ignore directories (it's not recursive here anymore)
+            if res.suffix == '.esdl':
+                rel_file = res.relative_to(parent_path)
+                local_files.append(str(rel_file))
+    if verbose: print('Local files to upload:', local_files)
+
+    for file_to_upload in local_files:
+        local_file = os.path.join(parent_path, file_to_upload)
+        remote_file = file_to_upload.replace('\\','/')
+        if destination_folder[-1] == '/':
+            destination_folder = destination_folder[:-1]
+        target_location = destination_folder + '/' + remote_file
+        upload_file(local_file, target_location, access_token, verbose)
+        # refresh access token if necessary and the file operations take longer than a few minutes
+        token = get_token(idm_url=options.token_url, username=options.username, verbose=options.verbose)
+        access_token = token['access_token']
 
 
 def upload_file(file:str, target_location:str, access_token:str, verbose=False):
     try:
         with open(file, 'r') as f:
-            target_location = target_location.replace('//', '/')
-            target_location = target_location.replace(':/', '://')
-
             print(f'Uploading {file} to: {target_location}')
             headers = dict()
             add_auth_headers(headers, access_token)
@@ -170,7 +177,9 @@ def upload_file(file:str, target_location:str, access_token:str, verbose=False):
             if verbose:
                 print('Upload response:', r.status_code, r.reason)
             if not r.ok:
-                print('Error uploading {}, reason: {}:{}, headers={}'.format(file, r.reason, r.text, r.headers))
+                print('Error uploading {}, reason: {}: {}'.format(file, r.reason, r.text))
+                if verbose:
+                    print("Headers={}".format(r.headers))
     except Exception as e:
         print("Error: {}".format(e))
 
@@ -193,7 +202,7 @@ def download(url:str, access_token: str, verbose=False):
         except Exception as e:
             print(f'Error writing download to {fileName}: {e}')
     else:
-        print('Error downloading {}, reason: {}:{}'.format(url, response.reason, response.text))
+        print('Error downloading {}, reason: {}: {}'.format(url, response.reason, response.text))
 
 
 def get_token(idm_url, username:str, password:str=None, verbose: bool = False ):

@@ -35,25 +35,32 @@ Try esdl-drive.py -h for more information
 
 ### Options
 ```                                                                              
-Options:                                                                      
-  --version             show program's version number and exit                
-  -h, --help            show this help message and exit                       
-  -u FOLDER, --upload-folder=FOLDER                                           
-                        Upload folder destination in ESDLDrive, e.g. /Users/edwin/                                         
-  -f FILE, --upload-file=FILE                                                 
-                        File or folder name to upload from local disk, e.g. EnergySystem.esdl or /files/EnergySystems/ or *       
-  -d FILE, --download-file=FILE                                               
-                        Download file from ESDLDrive, e.g. /Users/edwin/EnergySystem.esdl                        
-  -e URL, --esdldrive-url=URL                                                 
-                        The base url of the ESDL Drive 
-                        [default: https://drive.esdl.hesi.energy]                       
-  -t TOKEN_URL, --token-service=TOKEN_URL                                     
-                        The URL of the token service to retrieve an access token to access ESDLDrive 
-                        [default: https://idm.hesi.energy/auth/realms/esdl-mapeditor/protocol/openid-connect/token]              
-  -l USERNAME, --login-name=USERNAME                                          
-                        Username for the connection, if not given it will be asked for                                             
-  -p, --print-token     Print the token received from the token service       
-  -v, --verbose         Be verbose [default: False]                           
+Options:
+  --version             show program's version number and exit
+  -h, --help            show this help message and exit
+  -u FOLDER, --upload-folder=FOLDER
+                        Upload folder destination in ESDLDrive, e.g.
+                        /Users/edwin/
+  -r, --recursive       Recursively upload a whole folder structure
+  -f FILE, --upload-file=FILE
+                        File or folder name to upload from local disk, e.g.
+                        EnergySystem.esdl or /files/EnergySystems/ or *
+  -d FILE, --download-file=FILE
+                        Download file from ESDLDrive, e.g.
+                        /Users/edwin/EnergySystem.esdl
+  -e URL, --esdldrive-url=URL
+                        The base url of the ESDL Drive [default:
+                        https://drive.esdl.hesi.energy]
+  -t TOKEN_URL, --token-service=TOKEN_URL
+                        The URL of the token service to retrieve an access
+                        token to access ESDLDrive [default:
+                        https://idm.hesi.energy/auth/realms/esdl-
+                        mapeditor/protocol/openid-connect/token]
+  -l USERNAME, --login-name=USERNAME
+                        Username for the connection, if not given it will be
+                        asked for
+  -p, --print-token     Print the token received from the token service
+  -v, --verbose         Be verbose [default: False]                   
 ```
 
 # Examples
@@ -70,6 +77,11 @@ esdl-drive.py /Users/<your username>/EnergySystem.esdl
 Upload a folder with files to your projects folder:
 ```
 esdl-drive.py /tmp/energysystems/ /Prjects/<project name>/
+```
+
+Recursively upload all ESDL files from a folder with files and subfolders to your projects folder:
+```
+esdl-drive.py -r /tmp/energysystems/ /Prjects/<project name>/
 ```
 
 Upload all files in the current folder to your home folder:
