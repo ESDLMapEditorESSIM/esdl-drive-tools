@@ -114,15 +114,13 @@ def main(argv):
     token = get_token(idm_url=options.token_url, username=options.username, verbose=options.verbose)
     if token is None:
         print("Can't retrieve token from {}".format(options.token_url))
-        sys.exit(1)
+        sys.exit(2)
     if verbose:
         print("Logged in")
 
     if options.u_folder and options.u_filename:
         folder = options.url + base_path + options.u_folder
         file = options.u_filename
-        if verbose:
-            print("Uploading file {} to {}".format(file, folder))
         upload(file_or_folder=file, destination_folder=folder, access_token=token['access_token'], options=options)
     if options.d_filename:
         url = options.url + base_path + options.d_filename
@@ -135,16 +133,16 @@ def upload(file_or_folder: str, destination_folder: str, access_token: str, opti
     if recursive:
         if '*' in file_or_folder:
             print("Error: recursive option should not use wildcards such as * or *.esdl, this is done automatically.")
-            exit(2)
+            sys.exit(1)
         parent_path = pathlib.Path(file_or_folder).resolve()
         files = glob.glob(file_or_folder + os.path.sep + "**/*.esdl", recursive=True)
     else:
         files = glob.glob(file_or_folder)
-        if len(files) > 1:
+        if len(files) > 0:
             parent_path = pathlib.Path(files[0]).parent.resolve()
         else:
             print(f'Error finding ESDL-file {file_or_folder}')
-            exit(3)
+            sys.exit(3)
     local_files = []
     for f in files:
         res = pathlib.Path(f).resolve()
@@ -156,10 +154,13 @@ def upload(file_or_folder: str, destination_folder: str, access_token: str, opti
 
     for file_to_upload in local_files:
         local_file = os.path.join(parent_path, file_to_upload)
-        remote_file = file_to_upload.replace('\\','/')
+        remote_file = file_to_upload.replace('\\', '/')
         if destination_folder[-1] == '/':
             destination_folder = destination_folder[:-1]
-        target_location = destination_folder + '/' + remote_file
+        if destination_folder.endswith('.esdl') and not options.recursive:
+            target_location = destination_folder
+        else:
+            target_location = destination_folder + '/' + remote_file
         upload_file(local_file, target_location, access_token, verbose)
         # refresh access token if necessary and the file operations take longer than a few minutes
         token = get_token(idm_url=options.token_url, username=options.username, verbose=options.verbose)
