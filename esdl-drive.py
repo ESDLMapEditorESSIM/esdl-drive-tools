@@ -1,15 +1,19 @@
 #!/usr/bin/python3
+#
+#  This work is based on original code developed and copyrighted by TNO 2020.
+#  Subsequent contributions are licensed to you by the developers of such code and are
+#  made available to the Project under one or several contributor license agreements.
+#
+#  This work is licensed to you under the Apache License, Version 2.0.
+#  You may obtain a copy of the license at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Contributors:
+#      TNO         - Initial implementation
+#  Manager:
+#      TNO
 
-# This work is based on original code copyrighted by TNO.
-# Licensed to TNO under one or more contributer license agreements.
-#
-# TNO licenses this work to you under the Apache License, Version 2.0
-# You may obtain a copy of the license at http://www.apache.org/licenses/LICENSE-2.0
-#
-# Contributors:
-#       TNO             - Ewoud Werkman: Initial implementation
-#
-# :license: Apache License, Version 2.0
 
 """
 esdl-drive.py is a command line tool to interact with the ESDL Drive.
@@ -63,6 +67,8 @@ def main(argv):
                       help="Username for the connection, if not given it will be asked for")
     parser.add_option("-p", "--print-token", action="store_true", default=False, dest="printtoken",
                       help="Print the token received from the token service")
+    parser.add_option("-m", "--commit-message", action="store", default='Uploaded using esdl-drive', dest="commit_message",
+                      help="The commit message to add when uploading a file")
     parser.add_option("-v", "--verbose", action="store_true", dest="verbose", default=False,
                       help="Be verbose [default: %default]")
     (options, args) = parser.parse_args()
@@ -102,6 +108,7 @@ def main(argv):
         print('File to upload:', options.u_filename)
         print('Folder to upload to:', options.u_folder)
         print('File to download:', options.d_filename)
+        print('Commit message:', options.commit_message)
         print('Verbose:', options.verbose)
         print('Recursive:', options.recursive)
         print('Url:', options.url)
@@ -161,20 +168,21 @@ def upload(file_or_folder: str, destination_folder: str, access_token: str, opti
             target_location = destination_folder
         else:
             target_location = destination_folder + '/' + remote_file
-        upload_file(local_file, target_location, access_token, verbose)
+        upload_file(local_file, target_location, access_token, options.commit_message)
         # refresh access token if necessary and the file operations take longer than a few minutes
         token = get_token(idm_url=options.token_url, username=options.username, verbose=options.verbose)
         access_token = token['access_token']
 
 
-def upload_file(file:str, target_location:str, access_token:str, verbose=False):
+def upload_file(file:str, target_location:str, access_token: str, commit_message: str):
     try:
         with open(file, 'r') as f:
             print(f'Uploading {file} to: {target_location}')
             headers = dict()
             add_auth_headers(headers, access_token)
             data = f.read()
-            r = requests.put(url=target_location, headers=headers, data=data)
+            params = {'commitMessage': commit_message}
+            r = requests.put(url=target_location, headers=headers, params=params, data=data)
             if verbose:
                 print('Upload response:', r.status_code, r.reason)
             if not r.ok:
