@@ -71,6 +71,8 @@ def main(argv):
                       help="The commit message to add when uploading a file")
     parser.add_option("-v", "--verbose", action="store_true", dest="verbose", default=False,
                       help="Be verbose [default: %default]")
+    parser.add_option("-X", "--dump-esdl-drive-folder", action="store", dest="dumpFolder",
+                      help="Dump all accessible files in the specified folder to local disk to current folder, e.g. /Users/<username>")
     (options, args) = parser.parse_args()
     #print('Options',options)
     #print('args', args)
@@ -89,9 +91,10 @@ def main(argv):
             options.u_filename = args[0]
             options.u_folder = args[1]
         else:
-            print("Error: missing or wrong command line arguments")
-            parser.print_usage()
-            sys.exit(1)
+            if not options.dumpFolder:
+                print("Error: missing or wrong command line arguments")
+                parser.print_usage()
+                sys.exit(1)
 
     if options.u_filename and options.u_folder is None and len(args) == 1:
         options.u_folder = args[0]
@@ -133,6 +136,9 @@ def main(argv):
         url = options.url + base_path + options.d_filename
         print('Downloading', url)
         download(url, token['access_token'], options.verbose)
+    if options.dumpFolder:
+        print('Dumping all ESDL drive files in {} to local disk'.format(options.dumpFolder))
+        dump(options=options, access_token=token['access_token'])
 
 
 def upload(file_or_folder: str, destination_folder: str, access_token: str, options):
@@ -193,9 +199,14 @@ def upload_file(file:str, target_location:str, access_token: str, commit_message
         print("Error: {}".format(e))
 
 
-def download(url:str, access_token: str, verbose=False):
+'''
+:param outputFile fileName to output, if not use fileName from url.
+'''
+def download(url:str, access_token: str, verbose=False, outputFile: pathlib.Path=None):
     fileName = url[url.rindex('/')+1:]
-    if verbose: print('Storing download in:', fileName)
+    if outputFile is not None:
+        fileName = str(outputFile)
+    if verbose: print('Storing download in:', outputFile)
     headers = dict()
     add_auth_headers(headers, access_token)
     if verbose:
@@ -212,6 +223,42 @@ def download(url:str, access_token: str, verbose=False):
             print(f'Error writing download to {fileName}: {e}')
     else:
         print('Error downloading {}, reason: {}: {}'.format(url, response.reason, response.text))
+
+def dump(options, access_token):
+    headers = dict()
+    if options.dumpFolder is None:
+        options.dumpFolder = '/'
+    if options.dumpFolder == '/Users/<username>':
+        options.dumpFolder = '/Users/' + access_token['email']
+    print('Dump ESDL Drive folder: {}'.format(options.dumpFolder))
+    add_auth_headers(headers, access_token)
+    response = requests.get(options.url + "/store/list", headers=headers)
+    accessible_files = response.json()
+    if options.verbose: print("Accessible files: {}".format(accessible_files))
+    base_dump_folder = pathlib.Path().resolve().joinpath('esdl-drive-dump')
+    print("Dump output folder: {}".format(base_dump_folder))
+    for file in accessible_files:
+        if file.startswith(options.dumpFolder) and file.endswith('.esdl'):  #only download esdl file
+            fileName = file[file.rindex('/')+1:]
+            folder = file[1:file.rindex('/')] # remove prefixing '/'
+            outputPath = base_dump_folder.joinpath(folder)
+            outputFile = outputPath.joinpath(fileName)
+            if (outputFile.exists()):
+                print("Ignoring {}: already present.".format(outputFile))
+                continue
+            outputPath.mkdir(parents=True, exist_ok=True)
+            fileName = str(outputFile)
+            print("Dumping: {} -> {}".format(file, fileName), end='', flush=True)
+            url = options.url + base_path + file
+            start = datetime.datetime.now()
+            download(url=url, access_token=access_token, verbose=options.verbose, outputFile=fileName)
+            end = datetime.datetime.now()
+            diff = end-start
+            print(' ({0:.1f}s)'.format(diff.total_seconds()))
+            token = get_token(idm_url=options.token_url, username=options.username, verbose=options.verbose)
+            access_token = token['access_token']
+
+
 
 
 def get_token(idm_url, username:str, password:str=None, verbose: bool = False ):
