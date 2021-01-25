@@ -74,9 +74,9 @@ def main(argv):
     parser.add_option("-X", "--dump-esdl-drive-folder", action="store", dest="dumpFolder",
                       help="Dump all accessible files in the specified folder to local disk to current folder, e.g. /Users/<username>")
     (options, args) = parser.parse_args()
-    #print('Options',options)
-    #print('args', args)
-    #print('Argv',argv)
+    print('Options',options)
+    print('args', args)
+    print('Argv',argv)
 
     if options.printtoken:
         global print_token
@@ -86,10 +86,10 @@ def main(argv):
         if len(args) == 1:
             # one argument: download
             options.d_filename = args[0]
-        elif len(args) == 2:
+        elif len(args) >= 2:
             # two arguments: upload
-            options.u_filename = args[0]
-            options.u_folder = args[1]
+            options.u_filename = args[:-1]
+            options.u_folder = args[-1]
         else:
             if not options.dumpFolder:
                 print("Error: missing or wrong command line arguments")
@@ -142,20 +142,25 @@ def main(argv):
 
 
 def upload(file_or_folder: str, destination_folder: str, access_token: str, options):
-    recursive = options.recursive
-    if recursive:
-        if '*' in file_or_folder:
-            print("Error: recursive option should not use wildcards such as * or *.esdl, this is done automatically.")
-            sys.exit(1)
-        parent_path = pathlib.Path(file_or_folder).resolve()
-        files = glob.glob(file_or_folder + os.path.sep + "**/*.esdl", recursive=True)
+    if isinstance(file_or_folder, list) and len(file_or_folder) > 1:
+        files = file_or_folder
+        parent_path = pathlib.Path(files[0]).parent.resolve()
     else:
-        files = glob.glob(file_or_folder)
-        if len(files) > 0:
-            parent_path = pathlib.Path(files[0]).parent.resolve()
+        if len(file_or_folder) == 1: file_or_folder = file_or_folder[0]
+        recursive = options.recursive
+        if recursive:
+            if '*' in file_or_folder:
+                print("Error: recursive option should not use wildcards such as * or *.esdl, this is done automatically.")
+                sys.exit(1)
+            parent_path = pathlib.Path(file_or_folder).resolve()
+            files = glob.glob(file_or_folder + os.path.sep + "**/*.esdl", recursive=True)
         else:
-            print(f'Error finding ESDL-file {file_or_folder}')
-            sys.exit(3)
+            files = glob.glob(file_or_folder)
+            if len(files) > 0:
+                parent_path = pathlib.Path(files[0]).parent.resolve()
+            else:
+                print(f'Error finding ESDL-file {file_or_folder}')
+                sys.exit(3)
     local_files = []
     for f in files:
         res = pathlib.Path(f).resolve()
