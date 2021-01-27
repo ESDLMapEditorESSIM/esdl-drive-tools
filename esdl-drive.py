@@ -48,7 +48,7 @@ def main(argv):
               "  To download: %prog [options] <esdl_drive_file>\n" \
             "Try %prog -h for more information"
 
-    parser = OptionParser(usage=usage, version="%prog 1.0")
+    parser = OptionParser(usage=usage, version="%prog 1.1")
     parser.add_option("-u", "--upload-folder", dest="u_folder", action="store",
                       help="Upload folder destination in ESDLDrive, e.g. /Users/edwin/", metavar="FOLDER")
     parser.add_option("-r", "--recursive", action="store_true", default=False, dest="recursive",
@@ -74,9 +74,9 @@ def main(argv):
     parser.add_option("-X", "--dump-esdl-drive-folder", action="store", dest="dumpFolder",
                       help="Dump all accessible files in the specified folder to local disk to current folder, e.g. /Users/<username>")
     (options, args) = parser.parse_args()
-    print('Options',options)
-    print('args', args)
-    print('Argv',argv)
+    #print('Options',options)
+    #print('args', args)
+    #print('Argv',argv)
 
     if options.printtoken:
         global print_token

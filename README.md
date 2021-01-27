@@ -60,7 +60,10 @@ Options:
                         Username for the connection, if not given it will be
                         asked for
   -p, --print-token     Print the token received from the token service
-  -v, --verbose         Be verbose [default: False]                   
+  -v, --verbose         Be verbose [default: False]
+  -X DUMPFOLDER, --dump-esdl-drive-folder=DUMPFOLDER
+                        Dump all accessible files in the specified folder to
+                        local disk to current folder, e.g. /Users/<username>                  
 ```
 
 # Examples
